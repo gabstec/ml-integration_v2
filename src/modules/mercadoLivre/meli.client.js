@@ -20,13 +20,11 @@ export async function exchangeCodeForToken({ code, codeVerifier }) {
   });
 
   const data = await response.json();
-
   if (!response.ok) {
     const err = new Error(data.error_description || "Token exchange failed");
     err.status = response.status;
     err.details = data;
     throw err;
   }
-
   return data;
 }
