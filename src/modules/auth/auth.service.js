@@ -3,6 +3,8 @@ import { env } from "../../config/env.js";
 import { exchangeCodeForToken } from "../mercadoLivre/meli.client.js";
 import { saveToken } from "./auth.repository.js";
 
+const pkceByState = new Map();
+
 function toBase64Url(buffer) {
   return buffer.toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
@@ -17,6 +19,8 @@ export function buildAuthorizationUrl() {
   const state = randomUUID();
   const { codeVerifier, codeChallenge } = generatePkce();
 
+  pkceByState.set(state, codeVerifier);
+
   const authUrl = new URL("/authorization", env.meliAuthBase);
   authUrl.search = new URLSearchParams({
     response_type: "code",
@@ -27,25 +31,19 @@ export function buildAuthorizationUrl() {
     code_challenge_method: "S256"
   }).toString();
 
-  return { url: authUrl.toString(), codeVerifier };
+  return authUrl.toString();
 }
 
-export async function handleCallback({ code, error, error_description, codeVerifier }) {
-  if (error) {
-    const err = new Error(error_description || String(error));
-    err.status = 400;
-    err.details = { error, error_description };
-    throw err;
-  }
-
+export async function handleCallback({ code, state, error, error_description }) {
+  if (error) throw Object.assign(new Error(error_description || String(error)), { status: 400 });
   if (!code) throw Object.assign(new Error("missing_code"), { status: 400 });
+
+  const codeVerifier = pkceByState.get(state);
+  pkceByState.delete(state);
+
   if (!codeVerifier) throw Object.assign(new Error("missing_code_verifier"), { status: 400 });
 
-  const tokenData = await exchangeCodeForToken({
-    code: String(code),
-    codeVerifier
-  });
-
+  const tokenData = await exchangeCodeForToken({ code: String(code), codeVerifier });
   saveToken(tokenData);
   return tokenData;
 }
