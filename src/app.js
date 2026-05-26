@@ -2,6 +2,9 @@ import express from "express";
 import router from "./routes/index.js";
 import { logger } from "./utils/logger.js";
 import { errorMiddleware } from "./middlewares/error.middleware.js";
+import express from "express";
+import cookieParser from "cookie-parser";
+app.use(cookieParser());
 
 const app = express();
 
