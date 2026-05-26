@@ -1,9 +1,9 @@
-import express from "express";
+import express from "express"
 import router from "./routes/index.js";
 import { logger } from "./utils/logger.js";
 import { errorMiddleware } from "./middlewares/error.middleware.js";
-import express from "express";
 import cookieParser from "cookie-parser";
+import 'dotenv/config.js';
 app.use(cookieParser());
 
 const app = express();
